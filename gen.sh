@@ -9,6 +9,9 @@ wait
 echo "Загрузка генератора"
 curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/main.js > main.js &
 wait
+echo "Загрузка негенерирумеых файлов"
+curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/PSBCodeGen.swift > PSBCodeGen.swift &
+wait
 echo "Генерация методов"
 node main.js
 rm -rf main.js
