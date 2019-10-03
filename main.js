@@ -102,7 +102,7 @@ function parseQueryEnum() {
 
 function printPath(name) {
     text = "";
-    saveText("import Foundation\nimport Alamofire\n")
+    saveText("import Foundation\n")
     let className = firstToUpperCase(name) + "Api"
     saveText("public class " + className + " {");
     saveText("    public static let shared = " + className + "()\n");
@@ -125,7 +125,7 @@ function printPath(name) {
             saveText("            " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
         })
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        saveText("            errorCB: ((Error) -> Void)? = nil, \n            successCB: @escaping ((" + outcomeType + ") -> Void)) {");
+        saveText("            callback: @escaping ((" + outcomeType + "?, Error?) -> Void)) {");
         let inPathArg = path.incomeTypes.find(item => {
             return item.in == 'path'
         });
@@ -152,7 +152,7 @@ function printPath(name) {
             bodyPart = ", encoding: encodedData"
         }
         saveText("        let url = \"" + pathPartsUrl + '"');
-        saveText("        PSBCodeGen.shared.request(url, method: ." + path.type + bodyPart + ", errorCB: errorCB, successCB: successCB, type: " + outcomeType + ".self)")
+        saveText("        PSBCodeGen.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self)")
         saveText("    }\n")
     });
     saveText("}");
