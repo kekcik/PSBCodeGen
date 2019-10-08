@@ -4,6 +4,7 @@ import Alamofire
 public enum CodeGenError: Error {
     case invalidEnum
     case dataIsEmpty
+    case mockError
 }
 
 extension String: ParameterEncoding {
@@ -38,16 +39,39 @@ class PSBCodeGen: SessionDelegate {
     public var urlHost: String {
         return (SWGHostConfiguration.shared()?.currentHostUrlStr! ?? "") + "/api"
     }
+    
+    private func applyMock<T: Decodable>(mockString: String, callback: @escaping ((T?, Error?) -> Void), type: T.Type) {
+        let mockString = mockString.replacingOccurrences(of: "\"\"", with: "\"").replacingOccurrences(of: "\"", with: "\"\"")
+        let delay = Double.random(in: 0.5 ..< 3)
+        var delayedArg: T? = nil
+        var delayedError: Error? = nil
+        if mockString == "400" {
+            delayedError = CodeGenError.invalidEnum
+        } else if let data = mockString.data(using: .utf8) {
+            do {
+                let arg = try JSONDecoder().decode(type, from: data)
+                delayedArg = arg
+            } catch {
+                delayedError = error
+            }
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+            callback(delayedArg, delayedError)
+        }
+    }
 
-    public func request<T: Decodable>(_ url: String, method: HTTPMethod, encoding: ParameterEncoding? = nil, callback: @escaping ((T?, Error?) -> Void), type: T.Type) {
+    public func request<T: Decodable>(_ url: String, method: HTTPMethod, encoding: ParameterEncoding? = nil, callback: @escaping ((T?, Error?) -> Void), type: T.Type, mock: String? = nil) {
         configureAlamoFireSSLPinning()
+        if let mockString = mock {
+            applyMock(mockString: mockString, callback: callback, type: type)
+            return
+        }
         manager?.request(urlHost + url, method: method, headers: defaultHeaders).responseJSON { response in
             do {
                 guard
                     let data = response.data
                 else {
                     callback(nil, CodeGenError.dataIsEmpty)
-//                    errorCB?(CodeGenError.dataIsEmpty)
                     return
                 }
 

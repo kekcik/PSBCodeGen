@@ -124,6 +124,7 @@ function printPath(name) {
             }
             saveText("            " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
         })
+        saveText("            mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
         saveText("            callback: @escaping ((" + outcomeType + "?, Error?) -> Void)) {");
         let inPathArg = path.incomeTypes.find(item => {
@@ -152,7 +153,7 @@ function printPath(name) {
             bodyPart = ", encoding: encodedData"
         }
         saveText("        let url = \"" + pathPartsUrl + '"');
-        saveText("        PSBCodeGen.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self)")
+        saveText("        PSBCodeGen.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
         saveText("    }\n")
     });
     saveText("}");
@@ -193,7 +194,7 @@ function mapName(name) {
 }
 
 function printObject(className) {
-    saveText('// Сгенерировано с любовью\n\nimport Foundation\n\npublic class PB' + className + ': Codable {');
+    saveText('import Foundation\n\npublic class PB' + className + ': Codable {');
 
     for (let key in properties) {
         let property = properties[key];
