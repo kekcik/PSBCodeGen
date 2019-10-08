@@ -62,10 +62,12 @@ class PSBCodeGen: SessionDelegate {
 
     public func request<T: Decodable>(_ url: String, method: HTTPMethod, encoding: ParameterEncoding? = nil, callback: @escaping ((T?, Error?) -> Void), type: T.Type, mock: String? = nil) {
         configureAlamoFireSSLPinning()
+        #if DEBUG
         if let mockString = mock {
             applyMock(mockString: mockString, callback: callback, type: type)
             return
         }
+        #endif
         manager?.request(urlHost + url, method: method, headers: defaultHeaders).responseJSON { response in
             do {
                 guard
