@@ -157,7 +157,7 @@ function printPath(name) {
         saveText("    }\n")
     });
     saveText("}");
-    fs.writeFile('genApi/' + className + '.swift', text, function() {});
+    fs.writeFile('generatedControls/' + className + '.swift', text, function() {});
 }
 
 // parseObject(process.argv[2]);
@@ -181,7 +181,7 @@ function parseObject(className) {
         });
     };
     printObject(className)
-    fs.writeFile('gen/' + className + '.swift', text, function() {});
+    fs.writeFile('generatedModels/' + className + '.swift', text, function() {});
 }
 
 

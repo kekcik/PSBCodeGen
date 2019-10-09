@@ -1,8 +1,8 @@
 rm -rf newSwagger
 mkdir newSwagger
 cd newSwagger
-mkdir gen
-mkdir genApi
+mkdir generatedModels
+mkdir generatedControls
 echo "Загрузка api.json"
 curl -s http://retail-tst.payment.ru/api/swagger/docs/v1 > api.json &
 wait
