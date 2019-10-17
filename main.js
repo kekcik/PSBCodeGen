@@ -206,13 +206,13 @@ function printObject(className) {
         saveText("    public let " + property.name + ": " + type + "?");
         saveText();
     };
-    saveText('}\n');
-
+    saveText('}');
+    
     for (let key in enums) {
         let aEnum = enums[key];
         saveText('public enum ' + aEnum.name + 'Enum: Int, Codable {');
         aEnum.fields.forEach(element => saveText('    case ' + element.name + ' = ' + element.value));
-        saveText('}\n');
+        saveText('}');
     };
 }
 
