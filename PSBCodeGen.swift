@@ -5,6 +5,7 @@ public enum CodeGenError: Error {
     case invalidEnum
     case dataIsEmpty
     case mockError
+    case notString
 }
 
 extension String: ParameterEncoding {
@@ -86,7 +87,7 @@ class PSBCodeGen: SessionDelegate {
                     if let argTrimming = arg?.dropFirst().dropLast(), let arg = String(argTrimming) as? T {
                         callback(arg, nil)
                     } else {
-//                        error
+                        callback(nil, CodeGenError.notString)
                     }
                 } else {
                     let arg = try JSONDecoder().decode(type, from: data)
