@@ -119,14 +119,22 @@ function printPath(name) {
             let parts = type.name.split('.')
             let defaultValue = defaultValueDictionary[type.type]
             let defaultValueString = ""
+            let commentString = ""
             if (defaultValue != undefined) {
                 defaultValueString = " = " + defaultValue
             }
-            saveText("        " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
+            let rawComment = type.description.replace(/\r?\n/g, "")
+            if (rawComment.length != 0) {
+                commentString = ", // " + rawComment
+            } else {
+                commentString = ","
+            }
+            saveText("        " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + commentString)
         })
-        saveText("            mock: String? = nil,")
+        saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        saveText("            callback: @escaping ((" + outcomeType + "?, Error?) -> Void)) {");
+        saveText("        callback: @escaping ((" + outcomeType + "?, Error?) -> Void))");
+        saveText("    {")
         let inPathArg = path.incomeTypes.find(item => {
             return item.in == 'path'
         });
@@ -183,7 +191,6 @@ function parseObject(className) {
     printObject(className)
     fs.writeFile('Model/' + className + '.swift', text.trim(), function() {});
 }
-
 
 function mapName(name) {
     if (customNames[name] != undefined) {
