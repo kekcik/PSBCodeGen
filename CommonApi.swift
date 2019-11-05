@@ -71,7 +71,9 @@ class CommonApi: SessionDelegate {
         #endif
         manager?.request(urlHost + url, method: method, headers: defaultHeaders).responseJSON { response in
             do {
-                guard let data = response.data else {
+                guard 
+                    let data = response.data else
+                {
                     callback(nil, CommonApiError.dataIsEmpty)
                     return
                 }
