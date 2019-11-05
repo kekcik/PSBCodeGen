@@ -119,14 +119,22 @@ function printPath(name) {
             let parts = type.name.split('.')
             let defaultValue = defaultValueDictionary[type.type]
             let defaultValueString = ""
+            let commentString = ""
             if (defaultValue != undefined) {
                 defaultValueString = " = " + defaultValue
             }
-            saveText("            " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
+            let rawComment = type.description.replace(/\r?\n/g, "")
+            if (rawComment.length != 0) {
+                commentString = ", // " + rawComment
+            } else {
+                commentString = ","
+            }
+            saveText("        " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + commentString)
         })
-        saveText("            mock: String? = nil,")
+        saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        saveText("            callback: @escaping ((" + outcomeType + "?, Error?) -> Void)) {");
+        saveText("        callback: @escaping ((" + outcomeType + "?, Error?) -> Void))");
+        saveText("    {")
         let inPathArg = path.incomeTypes.find(item => {
             return item.in == 'path'
         });
@@ -153,7 +161,7 @@ function printPath(name) {
             bodyPart = ", encoding: encodedData"
         }
         saveText("        let url = \"" + pathPartsUrl + '"');
-        saveText("        PSBCodeGen.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
+        saveText("        CommonApi.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
         saveText("    }\n")
     });
     saveText("}");
@@ -184,7 +192,6 @@ function parseObject(className) {
     fs.writeFile('Model/' + className + '.swift', text.trim(), function() {});
 }
 
-
 function mapName(name) {
     if (customNames[name] != undefined) {
         return customNames[name]
@@ -194,7 +201,7 @@ function mapName(name) {
 }
 
 function printObject(className) {
-    saveText('import Foundation\n\npublic class PB' + className + ': Codable {');
+    saveText('import Foundation\n\npublic class CA' + className + ': Codable {');
 
     for (let key in properties) {
         let property = properties[key];
@@ -279,7 +286,7 @@ function getTypeName(property, key, propertyKey) {
     if (property['$ref'] != undefined) {
         let elem = property['$ref'].split('/')
         return {
-            typeName: 'PB' + elem[elem.length - 1],
+            typeName: 'CA' + elem[elem.length - 1],
             isEnum: false
         }
     };
