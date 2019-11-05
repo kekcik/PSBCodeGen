@@ -122,7 +122,7 @@ function printPath(name) {
             if (defaultValue != undefined) {
                 defaultValueString = " = " + defaultValue
             }
-            saveText("            " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
+            saveText("        " + parts[parts.length - 1] + ': ' + type.type + defaultValueString + ", // " + type.description.replace(/\r?\n/g, ""))
         })
         saveText("            mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
