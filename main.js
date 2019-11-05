@@ -201,7 +201,7 @@ function mapName(name) {
 }
 
 function printObject(className) {
-    saveText('import Foundation\n\npublic class PB' + className + ': Codable {');
+    saveText('import Foundation\n\npublic class CA' + className + ': Codable {');
 
     for (let key in properties) {
         let property = properties[key];
@@ -286,7 +286,7 @@ function getTypeName(property, key, propertyKey) {
     if (property['$ref'] != undefined) {
         let elem = property['$ref'].split('/')
         return {
-            typeName: 'PB' + elem[elem.length - 1],
+            typeName: 'CA' + elem[elem.length - 1],
             isEnum: false
         }
     };
