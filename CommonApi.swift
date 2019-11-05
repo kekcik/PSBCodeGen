@@ -1,7 +1,7 @@
 import Foundation
 import Alamofire
 
-public enum CodeGenError: Error {
+public enum CommonApiError: Error {
     case invalidEnum
     case dataIsEmpty
     case mockError
@@ -16,8 +16,8 @@ extension String: ParameterEncoding {
     }
 }
 
-class PSBCodeGen: SessionDelegate {
-    static let shared = PSBCodeGen()
+class CommonApi: SessionDelegate {
+    static let shared = CommonApi()
     var serverTrustPolicy: ServerTrustPolicy?
     var serverTrustPolicies = [String: ServerTrustPolicy]()
     var manager: Alamofire.SessionManager?
@@ -32,9 +32,9 @@ class PSBCodeGen: SessionDelegate {
             certificates: cers,
             validateCertificateChain: true,
             validateHost: true)
-            
+
         serverTrustPolicies = ["ib.psbank.ru": self.serverTrustPolicy!]
-        manager = Alamofire.SessionManager(configuration: URLSessionConfiguration.default, delegate: PSBCodeGen(), serverTrustPolicyManager: ServerTrustPolicyManager(policies: self.serverTrustPolicies))
+        manager = Alamofire.SessionManager(configuration: URLSessionConfiguration.default, delegate: CommonApi(), serverTrustPolicyManager: ServerTrustPolicyManager(policies: self.serverTrustPolicies))
     }
     
     public var urlHost: String {
@@ -47,7 +47,7 @@ class PSBCodeGen: SessionDelegate {
         var delayedArg: T? = nil
         var delayedError: Error? = nil
         if mockString == "400" {
-            delayedError = CodeGenError.mockError
+            delayedError = CommonApiError.mockError
         } else if let data = mockString.data(using: .utf8) {
             do {
                 let arg = try JSONDecoder().decode(type, from: data)
@@ -72,7 +72,7 @@ class PSBCodeGen: SessionDelegate {
         manager?.request(urlHost + url, method: method, headers: defaultHeaders).responseJSON { response in
             do {
                 guard let data = response.data else {
-                    callback(nil, CodeGenError.dataIsEmpty)
+                    callback(nil, CommonApiError.dataIsEmpty)
                     return
                 }
                 
@@ -85,7 +85,7 @@ class PSBCodeGen: SessionDelegate {
                     if let argTrimming = arg?.dropFirst().dropLast(), let arg = String(argTrimming) as? T {
                         callback(arg, nil)
                     } else {
-                        callback(nil, CodeGenError.notString)
+                        callback(nil, CommonApiError.notString)
                     }
                 } else {
                     let arg = try JSONDecoder().decode(type, from: data)
