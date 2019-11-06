@@ -41,7 +41,7 @@ class CommonApi: SessionDelegate {
         return (SWGHostConfiguration.shared()?.currentHostUrlStr! ?? "") + "/api"
     }
     
-    private func applyMock<T: Decodable>(mockString: String, callback: @escaping ((T?, Error?) -> Void), type: T.Type) {
+    private func applyMock<T: Decodable>(mockString: String, callback: @escaping ((Result<T>) -> Void), type: T.Type) {
         let mockString = mockString.replacingOccurrences(of: "\"\"", with: "\"").replacingOccurrences(of: "\"", with: "\"\"")
         let delay = Double.random(in: 0.5 ..< 3)
         var delayedArg: T? = nil
@@ -57,11 +57,15 @@ class CommonApi: SessionDelegate {
             }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-            callback(delayedArg, delayedError)
+            if let error = delayedError {
+                callback(.failure(error))
+            } else if let arg = delayedArg {
+                callback(.success(arg))
+            }
         }
     }
     
-    public func request<T: Decodable>(_ url: String, method: HTTPMethod, encoding: ParameterEncoding? = nil, callback: @escaping ((T?, Error?) -> Void), type: T.Type, mock: String? = nil) {
+    public func request<T: Decodable>(_ url: String, method: HTTPMethod, encoding: ParameterEncoding? = nil, callback: @escaping ((Result<T>) -> Void), type: T.Type, mock: String? = nil) {
         configureAlamoFireSSLPinning()
         #if DEBUG
         if let mockString = mock {
@@ -71,10 +75,10 @@ class CommonApi: SessionDelegate {
         #endif
         manager?.request(urlHost + url, method: method, headers: defaultHeaders).responseJSON { response in
             do {
-                guard 
+                guard
                     let data = response.data else
                 {
-                    callback(nil, CommonApiError.dataIsEmpty)
+                    callback(.failure(CommonApiError.dataIsEmpty))
                     return
                 }
                 
@@ -85,16 +89,16 @@ class CommonApi: SessionDelegate {
                 if type is String.Type {
                     let arg = String(data: data, encoding: .utf8)
                     if let argTrimming = arg?.dropFirst().dropLast(), let arg = String(argTrimming) as? T {
-                        callback(arg, nil)
+                        callback(.success(arg))
                     } else {
-                        callback(nil, CommonApiError.notString)
+                        callback(.failure(CommonApiError.notString))
                     }
                 } else {
                     let arg = try JSONDecoder().decode(type, from: data)
-                    callback(arg, nil)
+                    callback(.success(arg))
                 }
             } catch {
-                callback(nil, error)
+                callback(.failure(error))
             }
         }
     }
@@ -113,17 +117,7 @@ class CommonApi: SessionDelegate {
     }
 }
 
-extension Decimal {
-    public var int: Int {
-        return NSDecimalNumber(decimal: self).intValue
-    }
-    
-    public var double: Double {
-        return NSDecimalNumber(decimal: self).doubleValue
-    }
-    
-    public var number: NSNumber {
-        return NSDecimalNumber(decimal: self)
-    }
+public enum Result<Value> {
+    case success(Value)
+    case failure(Error)
 }
-

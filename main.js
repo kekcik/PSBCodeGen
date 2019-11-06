@@ -133,7 +133,7 @@ function printPath(name) {
         })
         saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        saveText("        callback: @escaping ((" + outcomeType + "?, Error?) -> Void))");
+        saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void)");
         saveText("    {")
         let inPathArg = path.incomeTypes.find(item => {
             return item.in == 'path'
