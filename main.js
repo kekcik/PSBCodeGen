@@ -122,6 +122,8 @@ function printPath(name) {
             let commentString = ""
             if (defaultValue != undefined) {
                 defaultValueString = " = " + defaultValue
+            } else {
+                console.log(type.type + defaultValueString + commentString)
             }
             let rawComment = type.description.replace(/\r?\n/g, "")
             if (rawComment.length != 0) {
@@ -133,6 +135,7 @@ function printPath(name) {
         })
         saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
+        // console.log(outcomeType);
         saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void)");
         saveText("    {")
         let inPathArg = path.incomeTypes.find(item => {
@@ -175,7 +178,8 @@ function parseObject(className) {
     enums = [];
     let obj = apiDocs.definitions[className];
     // console.log(obj);
-    let filedNames = Object.keys(obj.properties);
+    // let filedNames = Object.keys(obj.properties);
+    // while (true) {}
     for (let propertyKey in obj.properties) {
         let property = obj.properties[propertyKey];
         let description = property.description;
@@ -201,7 +205,7 @@ function mapName(name) {
 }
 
 function printObject(className) {
-    saveText('import Foundation\n\npublic class CA' + className + ': Codable {');
+    saveText('import Foundation\n\npublic struct CA' + className + ': Codable {');
 
     for (let key in properties) {
         let property = properties[key];
@@ -209,17 +213,24 @@ function printObject(className) {
         let type = property.type;
         if (property.isEnum) {
             type += 'Enum'
+            saveText("    private let " + property.name + ": Int?");
+            saveText("    public var " + property.name + "Value: CA" + type + "? {");
+            saveText("        return CA" + type + "(rawValue: " + property.name + " ?? 0)");
+            saveText("    }");
+
+        } else {
+            saveText("    public let " + property.name + ": " + type + "?");
         }
-        saveText("    public let " + property.name + ": " + type + "?");
         saveText();
     };
     saveText('}');
-    
+    saveText();
     for (let key in enums) {
         let aEnum = enums[key];
-        saveText('public enum ' + aEnum.name + 'Enum: Int, Codable {');
-        aEnum.fields.forEach(element => saveText('    case ' + element.name + ' = ' + element.value));
-        saveText('}');
+        saveText('public enum CA' + aEnum.name + 'Enum: Int, Codable {');
+        aEnum.fields.forEach(element => saveText('    case ' + element.name.trim() + ' = ' + element.value));
+        saveText('}');    
+        saveText();
     };
 }
 
