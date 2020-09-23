@@ -139,7 +139,11 @@ function printPath(name) {
             return item.in == 'path'
         });
         if (inPathArg != undefined) {
-            saveText("        let inPathArg = " + inPathArg.name)
+            if (inPathArg.type == 'Date') {
+                saveText("        let inPathArg = " + inPathArg.name + ".toCommonApiFormat()")
+            } else {
+                saveText("        let inPathArg = " + inPathArg.name)
+            }
         }
         let pathPartsUrl = path.path.split('/');
         pathPartsUrl = pathPartsUrl.map(item => item.charAt(0) == '{' ? "\\(" + "inPathArg" + ")" : item).join("/");
@@ -148,7 +152,11 @@ function printPath(name) {
             let argPath = queryParams.map(item => {
                 let parts = item.name.split('.')
                 let name = parts[parts.length - 1]
-                return name + "=\\(" + name + ")"
+                if (item.type == 'Date') {
+                    return name + "=\\(" + name + ".toCommonApiFormat())"
+                } else {
+                    return name + "=\\(" + name + ")"
+                }
             }).join("&")
             pathPartsUrl += '?' + argPath
         }
