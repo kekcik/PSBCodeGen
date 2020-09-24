@@ -231,6 +231,27 @@ function printObject(className) {
         }
         saveText();
     };
+
+    saveText('    init(');
+    let params = ''
+    for (let key in properties) {
+        let property = properties[key];
+        let type = property.type;
+        if (property.isEnum) {
+            type = 'Int'
+        }
+        params += "        " + property.name + ": " + type + "? = nil,\n"
+    };
+    params = params.slice(0, -2);
+    saveText(params)
+    saveText('    ) {');
+
+    for (let key in properties) {
+        let property = properties[key];
+        saveText("        self." + property.name + " = " + property.name);
+    };
+    saveText('    }');
+
     saveText('}');
     saveText();
     for (let key in enums) {
