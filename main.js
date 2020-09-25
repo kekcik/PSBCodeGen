@@ -58,6 +58,7 @@ function parsePath(data, address) {
     var pathObject = {};
     for (let key in data) {
         pathObject = data[key];
+        // console.log(pathObject);
         pathObject.type = key;
         pathObject.path = address;
         pathObject.incomeTypes = [];
@@ -112,7 +113,10 @@ function printPath(name) {
         pathParts = pathParts.slice(2);
         pathParts = pathParts.map(item => item.charAt(0) == '{' ? item.slice(1, -1) : item.replace("-", "_"))
         // pathParts = pathParts.filter(item => item.charAt(0) != '{')
-
+        let comment = (path.summary || "").replace(/\r?\n/g, "").trim();
+        if (comment.length > 0) {
+            saveText("    /// " + comment);
+        }
         saveText("    public func " + path.type + pathParts.map(part => firstToUpperCase(part)).join("") + "(");
         path.incomeTypes.forEach(type => {
             // console.log(type.in + " " + type.type);
@@ -181,20 +185,24 @@ function parseObject(className) {
     // console.log(obj);
     // let filedNames = Object.keys(obj.properties);
     // while (true) {}
+    let requiredProps = obj.required || []
+    // console.log(requiredProps);
     for (let propertyKey in obj.properties) {
         let property = obj.properties[propertyKey];
         let description = property.description;
         let type = getTypeName(property, className, propertyKey);
-
+        let name = mapName(propertyKey)
         properties.push({
             description: description,
             name: mapName(propertyKey),
             type: type.typeName,
-            isEnum: type.isEnum
+            isEnum: type.isEnum,
+            isRequired: requiredProps.includes(name)
         });
+        // requiredProps.length > 0 && console.log(requiredProps.includes(name));
     };
     printObject(className)
-    fs.writeFile('Model/' + className + '.swift', text.trim(), function() {});
+    fs.writeFile('Model/' + className + '.swift', text.trim() + "\n", function() {});
 }
 
 function mapName(name) {
@@ -206,21 +214,23 @@ function mapName(name) {
 }
 
 function printObject(className) {
-    saveText('import Foundation\n\npublic struct CA' + className + ': Codable {');
+    saveText('import Foundation\n\npublic class CA' + className + ': Codable {');
 
     for (let key in properties) {
         let property = properties[key];
-        saveText("    // " + (property.description || "").replace(/\r?\n/g, ""));
+        let comment = (property.description || "").replace(/\r?\n/g, "").trim();
+        if (comment.length > 0) {
+            saveText("    /// " + comment);
+        }
         let type = property.type;
         if (property.isEnum) {
             type += 'Enum'
-            saveText("    private let " + property.name + ": Int?");
-            saveText("    public var " + property.name + "Value: CA" + type + "? {");
+            saveText("    public var " + property.name + "Value: CA" + type + (property.isRequired ? "" : "?") + " {");
             saveText("        return CA" + type + "(rawValue: " + property.name + " ?? 0)");
             saveText("    }");
-
+            saveText("    private let " + property.name + ": Int" + (property.isRequired ? "" : "?"));
         } else {
-            saveText("    public let " + property.name + ": " + type + "?");
+            saveText("    public let " + property.name + ": " + type + (property.isRequired ? "" : "?"));
         }
         saveText();
     };
@@ -233,7 +243,7 @@ function printObject(className) {
         if (property.isEnum) {
             type = 'Int'
         }
-        params += "        " + property.name + ": " + type + "? = nil,\n"
+        params += "        " + property.name + ": " + type + (property.isRequired ? ",\n" : "? = nil,\n")
     };
     params = params.slice(0, -2);
     saveText(params)
@@ -309,7 +319,7 @@ function getTypeName(property, key, propertyKey) {
         let result = getTypeName(property.items, key, propertyKey)
         let type = result.typeName;
         if (result.isEnum) {
-            type += 'Enum'
+            type = 'CA' + type + 'Enum'
         }
         return {
             typeName: '[' + type + ']',

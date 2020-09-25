@@ -132,7 +132,6 @@ class CommonApi: SessionDelegate {
                 }
         }
     }
-
     
     private func parseResponce<T>(type: T.Type, value: Data) throws -> T where T: Decodable {
         
@@ -226,7 +225,7 @@ public struct CustomEncoding: ParameterEncoding {
 extension Encodable {
     var asDictionary: [String: Any] {
         if self is [Any] || self is Bool || self is String || self is Int64 || self is Int {
-            let preData = try! JSONEncoder().encode(self)
+            guard let preData = try? JSONEncoder().encode(self) else { return [:] }
             return ["customParametersKey": preData]
         } else {
             guard let data = try? JSONEncoder().encode(self) else { return [:] }
