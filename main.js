@@ -25,6 +25,7 @@ let defaultValueDictionary = {
     'String': '\"\"',
     'Bool': 'false',
 }
+
 let simpleTypes = ['Int', 'String', 'Double', 'Date', 'Data']
 var pathGroups = {};
 let customNames = {
@@ -41,16 +42,15 @@ for (let key in apiDocs.definitions) {
 for (let key in apiDocs.paths) {
     parsePath(apiDocs.paths[key], key)
 }
-Object.keys(pathGroups).forEach(name => printPath(name));
-// printPath("survey")
-// parseObject("UnauthorizedDPBrand");
+Object.keys(pathGroups).forEach(name => {
+    printPath(name)
+});
 
 var text = "";
 var properties = [];
 var enums = [];
 
 function saveText(nextPart) {
-    // console.log((nextPart || ''));
     text += (nextPart || '') + '\n';
 }
 
@@ -58,11 +58,11 @@ function parsePath(data, address) {
     var pathObject = {};
     for (let key in data) {
         pathObject = data[key];
+        // console.log(pathObject);
         pathObject.type = key;
         pathObject.path = address;
         pathObject.incomeTypes = [];
         let type = getTypeName(pathObject.responses['200'].schema);
-        // console.log(pathObject);
         pathObject.dataType = type;
         let pathParts = pathObject.path.split('/');
 
@@ -113,14 +113,18 @@ function printPath(name) {
         pathParts = pathParts.slice(2);
         pathParts = pathParts.map(item => item.charAt(0) == '{' ? item.slice(1, -1) : item.replace("-", "_"))
         // pathParts = pathParts.filter(item => item.charAt(0) != '{')
-
+        let comment = (path.summary || "").replace(/\r?\n/g, "").trim();
+        if (comment.length > 0) {
+            saveText("    /// " + comment);
+        }
         saveText("    public func " + path.type + pathParts.map(part => firstToUpperCase(part)).join("") + "(");
         path.incomeTypes.forEach(type => {
+            // console.log(type.in + " " + type.type);
             let parts = type.name.split('.')
             let defaultValue = defaultValueDictionary[type.type]
-            let defaultValueString = ""
+            let defaultValueString = "? = nil"
             let commentString = ""
-            if (defaultValue != undefined) {
+            if (defaultValue != undefined && type.in == 'path') {
                 defaultValueString = " = " + defaultValue
             }
             let rawComment = type.description.replace(/\r?\n/g, "")
@@ -133,42 +137,38 @@ function printPath(name) {
         })
         saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void)");
-        saveText("    {")
-        let inPathArg = path.incomeTypes.find(item => {
-            return item.in == 'path'
-        });
-        if (inPathArg != undefined) {
-            if (inPathArg.type == 'Date') {
-                saveText("        let inPathArg = " + inPathArg.name + ".toCommonApiFormat()")
-            } else {
-                saveText("        let inPathArg = " + inPathArg.name)
-            }
-        }
-        let pathPartsUrl = path.path.split('/');
-        pathPartsUrl = pathPartsUrl.map(item => item.charAt(0) == '{' ? "\\(" + "inPathArg" + ")" : item).join("/");
-        let queryParams = path.incomeTypes.filter(item => item.in == 'query')
-        if (queryParams.length != 0) {
-            let argPath = queryParams.map(item => {
-                let parts = item.name.split('.')
+        saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void");
+        saveText("    ) {")
+
+        let inQueryArgs = path.incomeTypes.filter(item => item.in == 'query' );
+        let queryPartUrl = ""
+        if (inQueryArgs && inQueryArgs.length > 0) {
+            saveText("        var queryArgs = [String: Any]()")
+            inQueryArgs.forEach(arg => {
+                let parts = arg.name.split('.')
                 let name = parts[parts.length - 1]
-                if (item.type == 'Date') {
-                    return name + "=\\(" + name + ".toCommonApiFormat())"
-                } else {
-                    return name + "=\\(" + name + ")"
+                let addsPart = ""
+                if (arg.type == 'Date') {
+                    addsPart = "?.toCommonApiFormat()"
                 }
-            }).join("&")
-            pathPartsUrl += '?' + argPath
+                saveText("        queryArgs[\"" + name + "\"] = " + name + addsPart)
+            })
+            saveText("        let argsString = queryArgs.map({ \"\\($0)=\\($1)\" }).joined(separator: \"&\")")
+            queryPartUrl = ' + (argsString.isEmpty ? "" : "?\\(argsString)")'
+            saveText("")
         }
+
+        let pathPartsUrl = path.path.split('/');
+        pathPartsUrl = pathPartsUrl.map(item => item.replace('{','\\(').replace('}',')') ).join("/");
+
         let bodyParam = path.incomeTypes.find(item => item.in == 'body')
         var bodyPart = ""
         if (bodyParam != undefined) {
             let parts = bodyParam.name.split('.')
             let name = parts[parts.length - 1]
-            saveText("        let encodedData = try? JSONEncoder().encode(" + name + ").base64EncodedString()")
-            bodyPart = ", encoding: encodedData"
+            bodyPart = ", body: " + name
         }
-        saveText("        let url = \"" + pathPartsUrl + '"');
+        saveText("        let url = \"" + pathPartsUrl + '"' + queryPartUrl);
         saveText("        CommonApi.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
         saveText("    }\n")
     });
@@ -183,21 +183,26 @@ function parseObject(className) {
     enums = [];
     let obj = apiDocs.definitions[className];
     // console.log(obj);
-    let filedNames = Object.keys(obj.properties);
+    // let filedNames = Object.keys(obj.properties);
+    // while (true) {}
+    let requiredProps = obj.required || []
+    // console.log(requiredProps);
     for (let propertyKey in obj.properties) {
         let property = obj.properties[propertyKey];
         let description = property.description;
         let type = getTypeName(property, className, propertyKey);
-
+        let name = mapName(propertyKey)
         properties.push({
             description: description,
             name: mapName(propertyKey),
             type: type.typeName,
-            isEnum: type.isEnum
+            isEnum: type.isEnum,
+            isRequired: requiredProps.includes(name)
         });
+        // requiredProps.length > 0 && console.log(requiredProps.includes(name));
     };
     printObject(className)
-    fs.writeFile('Model/' + className + '.swift', text.trim(), function() {});
+    fs.writeFile('Model/' + className + '.swift', text.trim() + "\n", function() {});
 }
 
 function mapName(name) {
@@ -213,21 +218,51 @@ function printObject(className) {
 
     for (let key in properties) {
         let property = properties[key];
-        saveText("    // " + (property.description || "").replace(/\r?\n/g, ""));
+        let comment = (property.description || "").replace(/\r?\n/g, "").trim();
+        if (comment.length > 0) {
+            saveText("    /// " + comment);
+        }
         let type = property.type;
         if (property.isEnum) {
             type += 'Enum'
+            saveText("    public var " + property.name + "Value: CA" + type + (property.isRequired ? "" : "?") + " {");
+            saveText("        return CA" + type + "(rawValue: " + property.name + " ?? 0)");
+            saveText("    }");
+            saveText("    private let " + property.name + ": Int" + (property.isRequired ? "" : "?"));
+        } else {
+            saveText("    public let " + property.name + ": " + type + (property.isRequired ? "" : "?"));
         }
-        saveText("    public let " + property.name + ": " + type + "?");
         saveText();
     };
+
+    saveText('    init(');
+    let params = ''
+    for (let key in properties) {
+        let property = properties[key];
+        let type = property.type;
+        if (property.isEnum) {
+            type = 'Int'
+        }
+        params += "        " + property.name + ": " + type + (property.isRequired ? ",\n" : "? = nil,\n")
+    };
+    params = params.slice(0, -2);
+    saveText(params)
+    saveText('    ) {');
+
+    for (let key in properties) {
+        let property = properties[key];
+        saveText("        self." + property.name + " = " + property.name);
+    };
+    saveText('    }');
+
     saveText('}');
-    
+    saveText();
     for (let key in enums) {
         let aEnum = enums[key];
-        saveText('public enum ' + aEnum.name + 'Enum: Int, Codable {');
-        aEnum.fields.forEach(element => saveText('    case ' + element.name + ' = ' + element.value));
-        saveText('}');
+        saveText('public enum CA' + aEnum.name + 'Enum: Int, Codable {');
+        aEnum.fields.forEach(element => saveText('    case ' + element.name.trim() + ' = ' + element.value));
+        saveText('}');    
+        saveText();
     };
 }
 
@@ -284,7 +319,7 @@ function getTypeName(property, key, propertyKey) {
         let result = getTypeName(property.items, key, propertyKey)
         let type = result.typeName;
         if (result.isEnum) {
-            type += 'Enum'
+            type = 'CA' + type + 'Enum'
         }
         return {
             typeName: '[' + type + ']',
