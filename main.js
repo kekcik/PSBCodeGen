@@ -25,6 +25,7 @@ let defaultValueDictionary = {
     'String': '\"\"',
     'Bool': 'false',
 }
+
 let simpleTypes = ['Int', 'String', 'Double', 'Date', 'Data']
 var pathGroups = {};
 let customNames = {
@@ -41,16 +42,15 @@ for (let key in apiDocs.definitions) {
 for (let key in apiDocs.paths) {
     parsePath(apiDocs.paths[key], key)
 }
-Object.keys(pathGroups).forEach(name => printPath(name));
-// printPath("survey")
-// parseObject("UnauthorizedDPBrand");
+Object.keys(pathGroups).forEach(name => {
+    printPath(name)
+});
 
 var text = "";
 var properties = [];
 var enums = [];
 
 function saveText(nextPart) {
-    // console.log((nextPart || ''));
     text += (nextPart || '') + '\n';
 }
 
@@ -62,7 +62,6 @@ function parsePath(data, address) {
         pathObject.path = address;
         pathObject.incomeTypes = [];
         let type = getTypeName(pathObject.responses['200'].schema);
-        // console.log(pathObject);
         pathObject.dataType = type;
         let pathParts = pathObject.path.split('/');
 
@@ -116,14 +115,13 @@ function printPath(name) {
 
         saveText("    public func " + path.type + pathParts.map(part => firstToUpperCase(part)).join("") + "(");
         path.incomeTypes.forEach(type => {
+            // console.log(type.in + " " + type.type);
             let parts = type.name.split('.')
             let defaultValue = defaultValueDictionary[type.type]
-            let defaultValueString = ""
+            let defaultValueString = "? = nil"
             let commentString = ""
-            if (defaultValue != undefined) {
+            if (defaultValue != undefined && type.in == 'path') {
                 defaultValueString = " = " + defaultValue
-            } else {
-                console.log(type.type + defaultValueString + commentString)
             }
             let rawComment = type.description.replace(/\r?\n/g, "")
             if (rawComment.length != 0) {
@@ -135,43 +133,38 @@ function printPath(name) {
         })
         saveText("        mock: String? = nil,")
         let outcomeType = path.dataType.isEnum ? 'Int' : path.dataType.typeName;
-        // console.log(outcomeType);
-        saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void)");
-        saveText("    {")
-        let inPathArg = path.incomeTypes.find(item => {
-            return item.in == 'path'
-        });
-        if (inPathArg != undefined) {
-            if (inPathArg.type == 'Date') {
-                saveText("        let inPathArg = " + inPathArg.name + ".toCommonApiFormat()")
-            } else {
-                saveText("        let inPathArg = " + inPathArg.name)
-            }
-        }
-        let pathPartsUrl = path.path.split('/');
-        pathPartsUrl = pathPartsUrl.map(item => item.charAt(0) == '{' ? "\\(" + "inPathArg" + ")" : item).join("/");
-        let queryParams = path.incomeTypes.filter(item => item.in == 'query')
-        if (queryParams.length != 0) {
-            let argPath = queryParams.map(item => {
-                let parts = item.name.split('.')
+        saveText("        callback: @escaping (Result<" + outcomeType + ">) -> Void");
+        saveText("    ) {")
+
+        let inQueryArgs = path.incomeTypes.filter(item => item.in == 'query' );
+        let queryPartUrl = ""
+        if (inQueryArgs && inQueryArgs.length > 0) {
+            saveText("        var queryArgs = [String: Any]()")
+            inQueryArgs.forEach(arg => {
+                let parts = arg.name.split('.')
                 let name = parts[parts.length - 1]
-                if (item.type == 'Date') {
-                    return name + "=\\(" + name + ".toCommonApiFormat())"
-                } else {
-                    return name + "=\\(" + name + ")"
+                let addsPart = ""
+                if (arg.type == 'Date') {
+                    addsPart = "?.toCommonApiFormat()"
                 }
-            }).join("&")
-            pathPartsUrl += '?' + argPath
+                saveText("        queryArgs[\"" + name + "\"] = " + name + addsPart)
+            })
+            saveText("        let argsString = queryArgs.map({ \"\\($0)=\\($1)\" }).joined(separator: \"&\")")
+            queryPartUrl = ' + (argsString.isEmpty ? "" : "?\\(argsString)")'
+            saveText("")
         }
+
+        let pathPartsUrl = path.path.split('/');
+        pathPartsUrl = pathPartsUrl.map(item => item.replace('{','\\(').replace('}',')') ).join("/");
+
         let bodyParam = path.incomeTypes.find(item => item.in == 'body')
         var bodyPart = ""
         if (bodyParam != undefined) {
             let parts = bodyParam.name.split('.')
             let name = parts[parts.length - 1]
-            saveText("        let encodedData = try? JSONEncoder().encode(" + name + ").base64EncodedString()")
-            bodyPart = ", encoding: encodedData"
+            bodyPart = ", body: " + name
         }
-        saveText("        let url = \"" + pathPartsUrl + '"');
+        saveText("        let url = \"" + pathPartsUrl + '"' + queryPartUrl);
         saveText("        CommonApi.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
         saveText("    }\n")
     });
