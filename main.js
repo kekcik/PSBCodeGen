@@ -235,7 +235,7 @@ function printObject(className) {
         saveText();
     };
 
-    saveText('    init(');
+    saveText('    public init(');
     let params = ''
     for (let key in properties) {
         let property = properties[key];
