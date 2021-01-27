@@ -225,7 +225,7 @@ function printObject(className) {
         let type = property.type;
         if (property.isEnum) {
             type += 'Enum'
-            saveText("    public var " + property.name + "Value: CA" + type + (property.isRequired ? "" : "?") + " {");
+            saveText("    public var " + property.name + "Value: CA" + type + "?" + " {");
             saveText("        return CA" + type + "(rawValue: " + property.name + " ?? 0)");
             saveText("    }");
             saveText("    private let " + property.name + ": Int" + (property.isRequired ? "" : "?"));
