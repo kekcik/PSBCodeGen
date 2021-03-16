@@ -15,7 +15,7 @@ let typeDictionary = {
     'integer_int64': 'Int64',
     'string_byte': 'String', // это ошибка
     'string_uuid': 'String',
-    'object_undefined': 'String',
+    'object_undefined': 'CAObject',
     'number_float': 'Decimal'
 }
 let defaultValueDictionary = {

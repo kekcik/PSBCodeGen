@@ -15,6 +15,8 @@ curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/CommonApi.swi
 wait
 curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/Error+Alamofire.swift > Core/Error+Alamofire.swift &
 wait
+curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/CAObject.swift > Core/CAObject.swift &
+wait
 echo "Генерация методов"
 node main.js
 rm -rf main.js
