@@ -13,7 +13,7 @@ let typeDictionary = {
     'string_date-time': 'Date',
     'integer_int32': 'Int',
     'integer_int64': 'Int64',
-    'string_byte': 'String', // это ошибка
+    'string_byte': 'Data',
     'string_uuid': 'String',
     'object_undefined': 'CAObject',
     'number_float': 'Decimal'

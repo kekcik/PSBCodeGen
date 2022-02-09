@@ -134,8 +134,9 @@ class CommonApi: SessionDelegate {
     }
     
     private func parseResponce<T>(type: T.Type, value: Data) throws -> T where T: Decodable {
-        
-        if type is String.Type {
+        if type is Data.Type, let result = value as? T {
+            return result
+        } else if type is String.Type {
             let arg = String(data: value, encoding: .utf8)
             if let argTrimming = arg?.dropFirst().dropLast(), let arg = String(argTrimming) as? T {
                 return arg
