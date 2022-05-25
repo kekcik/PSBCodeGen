@@ -113,7 +113,7 @@ function printPath(name) {
         pathParts = pathParts.slice(2);
         pathParts = pathParts.map(item => item.charAt(0) == '{' ? item.slice(1, -1) : item.replace("-", "_"))
         // pathParts = pathParts.filter(item => item.charAt(0) != '{')
-        let comment = (path.summary || "").replace(/\r?\n/g, "").trim();
+        let comment = (path.summary || "").replace(/\r?\n/g, "").trim().replace(/psb/ig, "bnk");
         if (comment.length > 0) {
             saveText("    /// " + comment);
         }
@@ -127,7 +127,7 @@ function printPath(name) {
             if (defaultValue != undefined && type.in == 'path') {
                 defaultValueString = " = " + defaultValue
             }
-            let rawComment = type.description.replace(/\r?\n/g, "")
+            let rawComment = type.description.replace(/\r?\n/g, "").replace(/psb/ig, "bnk")
             if (rawComment.length != 0) {
                 commentString = ", // " + rawComment
             } else {
@@ -218,7 +218,7 @@ function printObject(className) {
 
     for (let key in properties) {
         let property = properties[key];
-        let comment = (property.description || "").replace(/\r?\n/g, "").trim();
+        let comment = (property.description || "").replace(/\r?\n/g, "").trim().replace(/psb/ig, "bnk");
         if (comment.length > 0) {
             saveText("    /// " + comment);
         }
@@ -260,7 +260,7 @@ function printObject(className) {
     for (let key in enums) {
         let aEnum = enums[key];
         saveText('public enum CA' + aEnum.name + 'Enum: Int, Codable {');
-        aEnum.fields.forEach(element => saveText('    case ' + element.name.trim() + ' = ' + element.value));
+        aEnum.fields.forEach(element => saveText('    case ' + element.name.trim().replace(/psb/ig, "bnk") + ' = ' + element.value));
         saveText('}');    
         saveText();
     };
