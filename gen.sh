@@ -5,7 +5,7 @@ mkdir Model
 mkdir Api
 mkdir Core
 echo "Загрузка api.json"
-curl -s https://retail-tst.payment.ru/api/swagger/docs/v1 > api.json &
+curl -s http://dev-ib.headoffice.psbank.local/api/swagger/docs/v1 > api.json &
 wait
 echo "Загрузка генератора"
 curl -s https://raw.githubusercontent.com/kekcik/PSBCodeGen/master/main.js > main.js &
