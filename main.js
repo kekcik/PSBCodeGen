@@ -169,7 +169,7 @@ function printPath(name) {
             bodyPart = ", body: " + name
         }
         saveText("        let url = \"" + pathPartsUrl + '"' + queryPartUrl);
-        saveText("        CommonApi.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock)")
+        saveText("        CommonApi.shared.request(url, method: ." + path.type + bodyPart + ", callback: callback, type: " + outcomeType + ".self, mock: mock, function: #function)")
         saveText("    }\n")
     });
     saveText("}");
