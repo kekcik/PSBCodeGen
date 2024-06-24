@@ -3,7 +3,6 @@ mkdir newSwagger
 cd newSwagger
 mkdir Model
 mkdir Api
-mkdir Core
 echo "Загрузка api.json"
 curl -s http://dev-ib.headoffice.psbank.local/api/swagger/docs/v1 > api.json &
 wait
